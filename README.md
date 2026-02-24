@@ -1,4 +1,4 @@
-# Radtel RT-890 Enhancements to RT-890 Firmware
+# Enhancements to RT-890 Firmware
 
 This repository contains additional modifications and feature enhancements built on top of the OEFW community firmware for the Radtel RT-890.
 
