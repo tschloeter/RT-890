@@ -53,9 +53,11 @@ static void Star(void)
 		for (i = T9WritePos; i < sizeof(gBigString); i++) {
 			gBigString[i] = ' ';
 		}
+#ifndef DISALLOW_TRANSMIT
 		if (gMenuIndex == MENU_PERSONAL_ID) {
 			UI_DrawDeviceName(gBigString);
 		}
+#endif
 		if (gMenuIndex == MENU_CH_NAME) {
 			UI_DrawString(4, 48, gBigString, 10);
 		}
@@ -113,9 +115,11 @@ static void InsertChar(uint8_t Limit, char c)
 		gBigString[gCursorPosition] = c;
 		MoveCursor(true, 1);
 		T9WritePos++;
+#ifndef DISALLOW_TRANSMIT
 		if (gMenuIndex == MENU_PERSONAL_ID) {
 			UI_DrawDeviceName(gBigString);
 		}
+#endif
 		if (gMenuIndex == MENU_CH_NAME) {
 			UI_DrawString(4, 48, gBigString, 10);
 		}
@@ -162,12 +166,15 @@ void T9_Editor(uint8_t Key, uint8_t Limit)
 	case 0:
 		switch (Key) {
 		case KEY_MENU:
+#ifndef DISALLOW_TRANSMIT
 			if (gMenuIndex == MENU_PERSONAL_ID) {
 				for (i = 0; i < sizeof(gDeviceName); i++) {
 					gDeviceName[i] = gBigString[i];
 				}
 				SETTINGS_SaveDeviceName();
-			} else if (gMenuIndex == MENU_CH_NAME) {
+			} else
+#endif
+			if (gMenuIndex == MENU_CH_NAME) {
 				for (i = 0; i < 10; i++) {
 					gVfoState[gSettings.CurrentVfo].Name[i] = gBigString[i];
 				}

@@ -17,6 +17,11 @@
 #ifndef TASK_SIDEKEYS_H
 #define TASK_SIDEKEYS_H
 
+#define KEY_SIDE1_LONG_PRESS		(0)
+#define KEY_SIDE1_SHORT_PRESS	    (1)
+#define KEY_SIDE2_LONG_PRESS		(2)
+#define KEY_SIDE2_SHORT_PRESS	    (3)
+
 void Task_CheckSideKeys(void);
 
 #endif

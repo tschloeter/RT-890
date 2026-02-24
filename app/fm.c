@@ -59,7 +59,9 @@ static void DisableFM(void)
 void FM_Play(void)
 {
 	if (gScreenMode == SCREEN_MAIN && gFM_Mode < FM_MODE_PLAY) {
+#ifdef FM_RADIO_FULLSCREEN
 		UI_DrawFM();
+#endif
 		UI_DrawFMFrequency(gSettings.FmFrequency);
 		BK1080_Init();
 	} else {
@@ -111,7 +113,11 @@ void FM_Disable(bool bStandby)
 		if (gRadioMode != RADIO_MODE_RX && gRadioMode != RADIO_MODE_TX) {
 			RADIO_Tune(gSettings.CurrentVfo);
 		}
+#ifdef FM_RADIO_FULLSCREEN
 		UI_DrawMain(true);
+#else
+		UI_DrawMain(false);
+#endif
 	}
 }
 

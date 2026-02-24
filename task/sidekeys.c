@@ -40,22 +40,21 @@ void Task_CheckSideKeys(void)
 
 	SCHEDULER_ClearTask(TASK_CHECK_SIDE_KEYS);
 
-	// ??? Such a specific number
-	gSlot = 6;
+	gSlot = 0xFF;
 
 	if (!gpio_input_data_bit_read(GPIOF, BOARD_GPIOF_KEY_SIDE1) && KEY_Side1Counter > 1000) {
 		KEY_SideKeyLongPressed = true;
 		KEY_Side1Counter = 0;
-		gSlot = 0;
+		gSlot = KEY_SIDE1_LONG_PRESS;
 	} else if (!gpio_input_data_bit_read(GPIOA, BOARD_GPIOA_KEY_SIDE2) && KEY_Side2Counter > 1000) {
 		KEY_SideKeyLongPressed = true;
 		KEY_Side2Counter = 0;
-		gSlot = 2;
+		gSlot = KEY_SIDE2_LONG_PRESS;
 	} else if (gpio_input_data_bit_read(GPIOF, BOARD_GPIOF_KEY_SIDE1) && gpio_input_data_bit_read(GPIOA, BOARD_GPIOA_KEY_SIDE2)) {
 		if (KEY_Side1Counter > 100) {
-			gSlot = 1;
+			gSlot = KEY_SIDE1_SHORT_PRESS;
 		} else if (KEY_Side2Counter > 100) {
-			gSlot = 3;
+			gSlot = KEY_SIDE2_SHORT_PRESS;
 		}
 		KEY_SideKeyLongPressed = false;
 		KEY_Side1Counter = 0;

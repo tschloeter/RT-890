@@ -141,31 +141,33 @@ void UI_DrawActions(uint8_t Index)
 		"None        ",
 		"Monitor     ",
 		"Freq Detect ",
+#ifndef DISALLOW_TRANSMIT
 		"Repeat Mode ",
+#endif
 		"Preset CH   ",
 		"Local Alarm ",
+#ifndef DISALLOW_TRANSMIT
 		"Remote Alarm",
+#endif
 #ifdef ENABLE_NOAA
 		"NOAA        ",
-#else
-		"[DISABLED]  ",
 #endif
+#ifndef DISALLOW_TRANSMIT
 		"Send Tone   ",
 		"Roger Beep  ",
+#endif
 #ifdef ENABLE_FM_RADIO
 		"FM Radio    ",
-#else
-		"[DISABLED]  ",
 #endif
 		"Freq Scanner",
 		"Flashlight  ",
 #ifdef ENABLE_AM_FIX
 		"AM Fix      ",
-#else
-		"[DISABLED]  ",
 #endif
+#ifndef DISALLOW_TRANSMIT
 		"VOX         ",
 		"TX Power    ",
+#endif
 		"SQ Level    ",
 		"Dual Standby",
 		"Backlight   ",
@@ -174,21 +176,21 @@ void UI_DrawActions(uint8_t Index)
 		"Toggle SList",
 		"DTMF Decode ",
 		"Dual Display",
+#ifndef DISALLOW_TRANSMIT
 		"TX Frequency",
+#endif
 		"Lock        ",
 #ifdef ENABLE_SPECTRUM
 		"Spectrum    ",
-#else
-		"[DISABLED]  ",
 #endif
 		"Dark Mode   ",
 		"AGC Mode    ",
 #ifdef ENABLE_REGISTER_EDIT
 		"Reg Editor  ",
-#else
-		"[DISABLED]  ",
 #endif
+#ifndef DISALLOW_TRANSMIT
 		"Mic Gain    ",
+#endif
 		"Modulation  ",
 		"Bandwidth   ",
 	};
@@ -219,7 +221,7 @@ void UI_DrawChannelName(uint16_t Channel)
 	String[3] = gShortString[0];
 	String[4] = gShortString[1];
 	String[5] = gShortString[2];
-	SFLASH_Read(&Info, 0x3C2000 + (Channel * sizeof(Info)), sizeof(Info));
+	SFLASH_Read(&Info, BASE_ADDR_CHANNELS + (Channel * sizeof(Info)), sizeof(Info));
 	if (Info.Available) {
 		String[8] = 'N';
 	} else {
@@ -231,7 +233,7 @@ void UI_DrawChannelName(uint16_t Channel)
 	String[3] = gShortString[0];
 	String[4] = gShortString[1];
 	String[5] = gShortString[2];
-	SFLASH_Read(&Info, 0x3C2000 + ((Channel + 1U) % 999U) * sizeof(Info), sizeof(Info));
+	SFLASH_Read(&Info, BASE_ADDR_CHANNELS + ((Channel + 1U) % 999U) * sizeof(Info), sizeof(Info));
 	if (Info.Available) {
 		String[8] = 'N';
 	} else {
@@ -304,8 +306,8 @@ void UI_DrawCursor(uint8_t X, bool bVisible)
 
 void UI_DrawTxPriority(void)
 {
-	UI_DrawSettingOptionEx("Edit", 4, 0);
-	UI_DrawSettingOptionEx("Busy", 4, 1);
+	UI_DrawSettingOptionEx("Selected", 8, 0);
+	UI_DrawSettingOptionEx("Incoming", 8, 1);
 }
 
 void UI_DrawFrequencyStep(uint8_t Index)
@@ -443,8 +445,8 @@ void UI_DrawSettingModulation(uint8_t Index)
 
 void UI_DrawSettingBandwidth(void)
 {
-	UI_DrawSettingOptionEx("Wide  ", 6, 0);
-	UI_DrawSettingOptionEx("Narrow", 6, 1);
+	UI_DrawSettingOptionEx("Wide   (12.5k)", 12, 0);
+	UI_DrawSettingOptionEx("Narrow (6.25k)", 12, 1);
 }
 
 void UI_DrawSettingBusyLock(uint8_t Index)

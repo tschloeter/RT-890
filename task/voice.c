@@ -19,6 +19,7 @@
 #include "driver/speaker.h"
 #include "misc.h"
 #include "radio/settings.h"
+#include "driver/serial-flash.h"
 #include "task/voice.h"
 
 void Task_VoicePlayer(void)
@@ -28,7 +29,7 @@ void Task_VoicePlayer(void)
 	if (gSettings.VoicePrompt && !gAudioPlaying && (SPEAKER_State & SPEAKER_OWNER_SYSTEM) == 0) {
 		Index = gAudioOffsetIndex;
 		if (Index < gAudioOffsetLast) {
-			if (SFLASH_Offsets[Index] < 0x188000) {
+			if (SFLASH_Offsets[Index] < BASE_ADDR_AUDIO_DIGITS_LONG) {
 				gAudioTimer = 700;
 			} else {
 				gAudioTimer = 900;

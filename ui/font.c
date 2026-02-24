@@ -27,7 +27,7 @@ static uint8_t LoadAndDraw(uint8_t X, uint8_t Y, uint32_t Offset)
 	uint8_t i, j;
 	uint16_t Mask;
 
-	if (Offset < 0x0031A000) {
+	if (Offset < BASE_ADDR_FONT_STANDARD) {
 		SFLASH_Read(Bitmap, Offset, 32);
 		Mask = 0x8000;
 		for (i = 0; i < 16; i++) {
@@ -90,19 +90,18 @@ uint8_t FONT_GetOffsets(const char *String, uint8_t Size, bool bFlag)
 		uint16_t c = String[i];
 
 		if ((c >> 4) == 0xF) {
-			i++;
-			c = ((c & 0xF) << 8) | String[i];
+			c = ((c & 0xF) << 8) | String[++i];
 			if (!bFlag) {
-				SFLASH_Offsets[j] = 0x002F8000 + (c * 34);
+				SFLASH_Offsets[j] = BASE_ADDR_FONT_EXTENDED + (c * 34);
 			} else {
-				SFLASH_FontOffsets[j] = 0x002F8000 + (c * 34);
+				SFLASH_FontOffsets[j] = BASE_ADDR_FONT_EXTENDED + (c * 34);
 			}
 		} else {
 			c -= ' ';
 			if (!bFlag) {
-				SFLASH_Offsets[j] = 0x0031A000 + (c * 20);
+				SFLASH_Offsets[j] = BASE_ADDR_FONT_STANDARD + (c * 20);
 			} else {
-				SFLASH_FontOffsets[j] = 0x0031A000 + (c * 20);
+				SFLASH_FontOffsets[j] = BASE_ADDR_FONT_STANDARD + (c * 20);
 			}
 		}
 	}

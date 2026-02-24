@@ -58,8 +58,12 @@ uint16_t gCode;
 
 static void EnableTxAmp(bool bEnable)
 {
+#ifndef DISALLOW_TRANSMIT
 	if (!bEnable) {
+#endif
 		gpio_bits_reset(GPIOB, BOARD_GPIOB_TX_BIAS_LDO);
+#ifndef DISALLOW_TRANSMIT
+		gpio_bits_reset(GPIOB, BOARD_GPIOB_TX_AMP_SEL);
 	} else {
 		gpio_bits_set(GPIOB, BOARD_GPIOB_TX_BIAS_LDO);
 		if (gUseUhfFilter) {
@@ -68,6 +72,7 @@ static void EnableTxAmp(bool bEnable)
 			gpio_bits_reset(GPIOB, BOARD_GPIOB_TX_AMP_SEL);
 		}
 	}
+#endif
 }
 
 static void TuneCurrentVfo(void)
@@ -114,6 +119,7 @@ static void TuneCurrentVfo(void)
 	BK4819_EnableFilter(true);
 }
 
+#ifndef DISALLOW_TRANSMIT
 static bool TuneTX(bool bUseMic)
 {
 	if (gSettings.RepeaterMode == 2) {
@@ -128,7 +134,7 @@ static bool TuneTX(bool bUseMic)
 
 	gCode = gVfoInfo[gCurrentVfo].Code;
 	BK4819_SetFrequency(gVfoInfo[gCurrentVfo].Frequency);
-	if (gSettings.BandInfo[gCurrentFrequencyBand] == BAND_136MHz && gVfoInfo[gCurrentVfo].Frequency >= 13600000) {
+	if (gSettings.BandInfo[gCurrentFrequencyBand] == 0 && gVfoInfo[gCurrentVfo].Frequency >= BAND_136MHz_START) {
 		BK4819_EnableFilter(false);
 		if (gMainVfo->bMuteEnabled) {
 			CSS_SetCustomCode(gMainVfo->bIs24Bit, gMainVfo->Golay, gMainVfo->bIsNarrow);
@@ -178,6 +184,7 @@ static void SpecialRxTxLoop(void)
 		RADIO_StartTX(true);
 	}
 }
+#endif
 
 static void TuneNOAA(void)
 {
@@ -246,6 +253,7 @@ void RADIO_Init(void)
 
 	if (gSettings.DtmfState != DTMF_STATE_KILLED) {
 		UI_DrawMain(false);
+#ifndef DISALLOW_TRANSMIT
 		BK4819_EnableVox(gSettings.Vox);
 		if (!gpio_input_data_bit_read(GPIOB, BOARD_GPIOB_KEY_PTT)) {
 			if (!gpio_input_data_bit_read(GPIOF, BOARD_GPIOF_KEY_SIDE1)) {
@@ -254,6 +262,7 @@ void RADIO_Init(void)
 				}
 			}
 		}
+#endif
 	}
 }
 
@@ -397,6 +406,7 @@ void RADIO_Sleep(void)
 	gSaveMode = true;
 }
 
+#ifndef DISALLOW_TRANSMIT
 static void PlayRogerBeep(uint8_t Mode)
 {
 	BEEP_Enable();
@@ -425,6 +435,7 @@ static void PlayRogerBeep(uint8_t Mode)
 
 	BEEP_Disable();
 }
+#endif
 
 void RADIO_Retune(void)
 {
@@ -491,6 +502,7 @@ void RADIO_SaveCurrentVfo(void)
 
 void RADIO_StartTX(bool bUseMic)
 {
+#ifndef DISALLOW_TRANSMIT
 	if (gRadioMode == RADIO_MODE_RX) {
 		RADIO_EndRX();
 	}
@@ -533,10 +545,12 @@ void RADIO_StartTX(bool bUseMic)
 			}
 		}
 	}
+#endif
 }
 
 void RADIO_EndTX(void)
 {
+#ifndef DISALLOW_TRANSMIT
 	if (gDTMF_Settings.Mode == DTMF_MODE_TX_END || gDTMF_Settings.Mode == DTMF_MODE_TX_START_END) {
 		DTMF_PlayContact(&gDTMF_Contacts[gDTMF_Settings.Select]);
 	}
@@ -556,6 +570,7 @@ void RADIO_EndTX(void)
 	UI_DrawSomething();
 	gBatteryTimer = 3000;
 	gIdleTimer = 10000;
+#endif
 }
 
 void RADIO_CancelMode(void)

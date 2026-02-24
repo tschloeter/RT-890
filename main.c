@@ -14,6 +14,10 @@
  *     limitations under the License.
  */
 
+#ifdef DISALLOW_TRANSMIT
+	#pragma message("Building with DISALLOW_TRANSMIT defined. Transmit functions will be disabled (Radio Scanner Mode).")
+#endif
+
 #include <at32f421.h>
 #include "app/radio.h"
 #include "app/uart.h"

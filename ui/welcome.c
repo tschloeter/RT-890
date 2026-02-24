@@ -22,5 +22,8 @@ void UI_DrawWelcome(void)
 {
 	gColorForeground = COLOR_RED;
 	UI_DrawString(gSettings.WelcomeX, gSettings.WelcomeY, WelcomeString, sizeof(WelcomeString));
+	#ifdef DISALLOW_TRANSMIT
+		UI_DrawString(10, 42, "=SCANNER FIRMWARE=", 18);
+	#endif
 }
 

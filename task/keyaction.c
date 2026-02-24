@@ -59,11 +59,12 @@
 #include "ui/vfo.h"
 
 void SetDefaultKeyShortcuts(uint8_t IncludeSideKeys) {
+#ifndef DISALLOW_TRANSMIT
 	if (IncludeSideKeys) {
-		gSettings.Actions[0] = ACTION_FREQUENCY_DETECT;			//Side 1 long
-		gSettings.Actions[1] = ACTION_MONITOR;					//Side 1 short
-		gSettings.Actions[2] = ACTION_FLASHLIGHT;				//Side 2 long
-		gSettings.Actions[3] = ACTION_ROGER_BEEP;				//Side 2 short
+		gSettings.Actions[KEY_SIDE1_LONG_PRESS] = ACTION_FREQUENCY_DETECT;			//Side 1 long
+		gSettings.Actions[KEY_SIDE1_SHORT_PRESS] = ACTION_MONITOR;					//Side 1 short
+		gSettings.Actions[KEY_SIDE2_LONG_PRESS] = ACTION_FLASHLIGHT;				//Side 2 long
+		gSettings.Actions[KEY_SIDE2_SHORT_PRESS] = ACTION_ROGER_BEEP;				//Side 2 short
 	}
 
 	gExtendedSettings.KeyShortcut[0] = ACTION_FM_RADIO;			//0 key long
@@ -80,6 +81,33 @@ void SetDefaultKeyShortcuts(uint8_t IncludeSideKeys) {
 	gExtendedSettings.KeyShortcut[11] = ACTION_LOCK;			//# key long
 	gExtendedSettings.KeyShortcut[12] = ACTION_DTMF_DECODE;		//Menu key long
 	gExtendedSettings.KeyShortcut[13] = ACTION_DUAL_DISPLAY;	//Exit key long
+#else
+	if (IncludeSideKeys) {
+		gSettings.Actions[KEY_SIDE1_LONG_PRESS] = ACTION_MODULATION;			//Side 1 long
+		gSettings.Actions[KEY_SIDE1_SHORT_PRESS] = ACTION_MONITOR;				//Side 1 short
+		gSettings.Actions[KEY_SIDE2_LONG_PRESS] = ACTION_BANDWIDTH;				//Side 2 long
+		gSettings.Actions[KEY_SIDE2_SHORT_PRESS] = ACTION_FREQ_STEP;			//Side 2 short
+	}
+
+	gExtendedSettings.KeyShortcut[0] = ACTION_FM_RADIO;			//0 key long
+	gExtendedSettings.KeyShortcut[1] = ACTION_SCAN;				//1 key long
+#ifdef ENABLE_SPECTRUM
+	gExtendedSettings.KeyShortcut[2] = ACTION_SPECTRUM;			//2 key long
+#else
+	gExtendedSettings.KeyShortcut[2] = ACTION_NONE;				//2 key long
+#endif
+	gExtendedSettings.KeyShortcut[3] = ACTION_SQ_LEVEL;			//3 key long
+	gExtendedSettings.KeyShortcut[4] = ACTION_NOAA_CHANNEL;		//4 key long
+	gExtendedSettings.KeyShortcut[5] = ACTION_FREQUENCY_DETECT;	//5 key long
+	gExtendedSettings.KeyShortcut[6] = ACTION_DUAL_STANDBY;		//6 key long
+	gExtendedSettings.KeyShortcut[7] = ACTION_AGC_MODE;			//7 key long
+	gExtendedSettings.KeyShortcut[8] = ACTION_BEEP;				//8 key long
+	gExtendedSettings.KeyShortcut[9] = ACTION_LOCAL_ALARM;		//9 key long
+	gExtendedSettings.KeyShortcut[10] = ACTION_PRESET_CHANNEL;	//* key long
+	gExtendedSettings.KeyShortcut[11] = ACTION_LOCK;			//# key long
+	gExtendedSettings.KeyShortcut[12] = ACTION_BACKLIGHT;		//Menu key long
+	gExtendedSettings.KeyShortcut[13] = ACTION_DUAL_DISPLAY;	//Exit key long
+#endif
 
 	SETTINGS_SaveGlobals();
 }
@@ -154,6 +182,7 @@ void KeypressAction(uint8_t Action) {
 				}
 				break;
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_REPEATER_MODE:
 				gSettings.RepeaterMode = (gSettings.RepeaterMode + 1) % 3;
 				SETTINGS_SaveGlobals();
@@ -167,6 +196,7 @@ void KeypressAction(uint8_t Action) {
 				}
 				BEEP_Play(740, 2, 100);
 				break;
+#endif
 
 			// This action acts like previous for when used from sidekeys and like "1 call" when used from keyboard
 			case ACTION_PRESET_CHANNEL:
@@ -189,11 +219,13 @@ void KeypressAction(uint8_t Action) {
 				BK4819_SetAF(BK4819_AF_ALAM);
 				break;
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_REMOTE_ALARM:
 				ALARM_Start();
 				BK4819_SetAF(BK4819_AF_BEEP);
 				RADIO_StartTX(false);
 				break;
+#endif
 
 #ifdef ENABLE_NOAA
 				case ACTION_NOAA_CHANNEL:
@@ -214,6 +246,7 @@ void KeypressAction(uint8_t Action) {
 					break;
 #endif
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_SEND_TONE:
 				gEnableLocalAlarm = true;
 				gSendTone = true;
@@ -228,6 +261,7 @@ void KeypressAction(uint8_t Action) {
 				BEEP_Play(740, 2, 100);
 				UI_DrawRoger();
 				break;
+#endif
 
 			case ACTION_SCAN:
 				gScanStartFreqOrChannel = gSettings.WorkMode ? gSettings.VfoChNo[gSettings.CurrentVfo] : gVfoInfo[gSettings.CurrentVfo].Frequency;
@@ -270,6 +304,7 @@ void KeypressAction(uint8_t Action) {
 #endif
 				break;
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_VOX:
 				RADIO_CancelMode();
 				gSettings.Vox ^= 1;
@@ -290,6 +325,7 @@ void KeypressAction(uint8_t Action) {
 				CHANNELS_SaveVfo();
 				UI_DrawDialogText(DIALOG_TX_POWER, gVfoState[gSettings.CurrentVfo].bIsLowPower);
 				break;
+#endif
 
 			case ACTION_SQ_LEVEL:
 				gMenuIndex = MENU_SQ_LEVEL;
@@ -297,11 +333,13 @@ void KeypressAction(uint8_t Action) {
 				MENU_DrawSetting();
 				break;
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_MIC_GAIN:
 				gMenuIndex = MENU_MIC_GAIN;
 				DISPLAY_Fill(0, 159, 1, 81, COLOR_BACKGROUND);
 				MENU_DrawSetting();
 				break;
+#endif
 
 			case ACTION_DUAL_STANDBY:
 				RADIO_CancelMode();
@@ -377,6 +415,7 @@ void KeypressAction(uint8_t Action) {
 				UI_DrawMain(true);
 				break;
 
+#ifndef DISALLOW_TRANSMIT
 			case ACTION_TX_FREQ:
 				gFrequencyReverse = !gFrequencyReverse;
 				bBeep740 = gFrequencyReverse;
@@ -384,6 +423,7 @@ void KeypressAction(uint8_t Action) {
 				gInputBoxWriteIndex = 0;
 				INPUTBOX_Pad(0, 10);
 				break;
+#endif
 
 			case ACTION_LOCK:
 				LOCK_Toggle();

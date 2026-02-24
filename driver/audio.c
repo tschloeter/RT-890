@@ -38,8 +38,6 @@ bool gAudioPlaying;
 uint8_t gAudioOffsetLast;
 uint8_t gAudioOffsetIndex;
 
-//
-
 static void TimerStart(uint16_t SampleRate)
 {
 	tmr_para_init_ex0_type init;
@@ -57,7 +55,7 @@ static void TimerStart(uint16_t SampleRate)
 
 static uint32_t GetDigitAddress(uint8_t Digit)
 {
-	return 0x118000U + (Digit * 0x4000U);
+	return BASE_ADDR_AUDIO_DIGITS_SHORT + (Digit * 0x4000U);
 }
 
 static void PlayNumber(uint16_t Channel)
@@ -148,8 +146,6 @@ void HandlerTMR6_GLOBAL(void)
 	}
 }
 
-//
-
 void AUDIO_PlaySample(uint16_t SampleRate, uint32_t Offset)
 {
 	if (bPauseTimer) {
@@ -157,8 +153,8 @@ void AUDIO_PlaySample(uint16_t SampleRate, uint32_t Offset)
 	}
 	gAudioPlaying = true;
 	bAudioSpeakerEnable = true;
-	AudioFlashOffset = Offset;
-	SFLASH_Read(gFlashBuffer, Offset, 0x2000);
+	AudioFlashOffset = BASE_ADDR_AUDIO_MENU + Offset;
+	SFLASH_Read(gFlashBuffer, AudioFlashOffset, 0x2000);
 	AudioEndPosition = 0x4000;
 	g_Unused = 0;
 	SampleReadPosition = 0;
@@ -173,7 +169,7 @@ void AUDIO_PlaySampleOptional(uint8_t ID)
 		AudioEndPosition = 0x4000;
 		bPauseTimer = true;
 		gAudioTimer = 3000;
-		AUDIO_PlaySample(9375, ID << 14);
+		AUDIO_PlaySample(9375, (uint32_t) ID << 14);
 	}
 }
 

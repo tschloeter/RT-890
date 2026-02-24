@@ -72,8 +72,8 @@ static bool CheckScanResult(void)
 	Frequency = (Result & 0x07FF) << 16;
 	Frequency |= BK4819_ReadRegister(0x0E);
 
-	if (!gSettings.bUseVHF || Frequency <= 24000000) {
-		if (!gSettings.bUseVHF && Frequency < 24000000) {
+	if (!gSettings.bUseVHF || Frequency <= BAND_240MHz_START) {
+		if (!gSettings.bUseVHF && Frequency < BAND_240MHz_START) {
 			Frequency *= 2U;
 		}
 	} else {
@@ -355,8 +355,6 @@ static void DETECTOR_Loop(void)
 		}
 	}
 }
-
-//
 
 void RADIO_FrequencyDetect(void)
 {

@@ -39,7 +39,9 @@ bool gPttPressed;
 
 void Task_CheckPTT(void)
 {
+#ifndef DISALLOW_TRANSMIT
 	const uint16_t Timer = TIMER_Calculate(gSettings.TimeoutTimer);
+#endif
 
 	if (!SCHEDULER_CheckTask(TASK_CHECK_PTT)) {
 		return;
@@ -103,8 +105,11 @@ void Task_CheckPTT(void)
 			}
 #endif
 			if (gPttPressed) {
+#ifndef DISALLOW_TRANSMIT
 				BEEP_Play(440, 4, 80);
+#endif
 				return;
+#ifndef DISALLOW_TRANSMIT
 			} else if (gRadioMode == RADIO_MODE_TX) {
 				VOX_Update();
 				if (Timer && (gPttTimeout / 1000) >= Timer) {
@@ -113,16 +118,19 @@ void Task_CheckPTT(void)
 				}
 			} else if (gPttLock == 0) {
 				RADIO_StartTX(true);
+#endif
 			}
 		}
 	} else {
 		gPttCounter = 0;
 		gPttPressed = false;
 		gPttTimeout = 0;
+#ifndef DISALLOW_TRANSMIT
 		PTT_ClearLock(PTT_LOCK_VOX);
 		if (gRadioMode == RADIO_MODE_TX && !VOX_IsTransmitting && !gEnableLocalAlarm) {
 			RADIO_EndTX();
 		}
+#endif
 	}
 }
 

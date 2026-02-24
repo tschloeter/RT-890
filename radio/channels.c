@@ -421,7 +421,7 @@ void CHANNELS_NextChannelVfo(uint8_t Key)
 		}
 		pInfo->TX.Frequency = pInfo->RX.Frequency;
 		gVfoInfo[gSettings.CurrentVfo].Frequency = pInfo->RX.Frequency;
-		// if (pInfo->RX.Frequency < 13600000) {
+		// if (pInfo->RX.Frequency < BAND_136MHz_START) {
 		// 	pInfo->gModulationType = 1;
 		// } else {
 		// 	pInfo->gModulationType = 0;
@@ -578,7 +578,7 @@ bool CHANNELS_LoadChannel(uint16_t ChNo, uint8_t Vfo)
 {
 	uint32_t Frequency;
 
-	SFLASH_Read(&gVfoState[Vfo], 0x3C2000 + (ChNo * sizeof(ChannelInfo_t)), sizeof(ChannelInfo_t));
+	SFLASH_Read(&gVfoState[Vfo], BASE_ADDR_CHANNELS + (ChNo * sizeof(ChannelInfo_t)), sizeof(ChannelInfo_t));
 	if (gSettings.bFLock) {
 		Frequency = gVfoState[Vfo].RX.Frequency;
 		if (Frequency > 44000000) {

@@ -20,6 +20,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define BAND_136MHz_START		(13600000)
+#define BAND_400MHz_START		(40000000)
+#define BAND_446MHz_START		(44600000)
+#define BAND_64MHz_START		(6400000)
+#define BAND_174MHz_START		(17400000)
+#define BAND_240MHz_START		(24000000)
+#define BAND_320MHz_START		(32000000)
+#define BAND_480MHz_START		(48000000)
+#define BAND_136MHz_END			(17400000)
+#define BAND_400MHz_END			(48000000)
+#define BAND_446MHz_END			(44620000)
+#define BAND_64MHz_END			(13600000)
+#define BAND_174MHz_END			(24000000)
+#define BAND_240MHz_END			(32000000)
+#define BAND_320MHz_END			(40000000)
+#define BAND_480MHz_END			(56000000)
+
 enum {
 	BAND_136MHz = 0,
 	BAND_400MHz = 1,

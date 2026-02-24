@@ -26,6 +26,7 @@
 #include "task/vox.h"
 #include "ui/helper.h"
 
+#ifndef DISALLOW_TRANSMIT
 static const uint16_t gVoxTable[10] = {
 	0x0000,
 	0x0002,
@@ -38,11 +39,13 @@ static const uint16_t gVoxTable[10] = {
 	0x00D2,
 	0x0104,
 };
+#endif
 
 uint16_t gVoxRssiUpdateTimer;
 uint16_t VOX_Counter;
 bool VOX_IsTransmitting;
 
+#ifndef DISALLOW_TRANSMIT
 static bool CheckStatus(void)
 {
 	uint16_t Value;
@@ -57,6 +60,7 @@ static bool CheckStatus(void)
 
 	return VOX_IsTransmitting;
 }
+#endif
 
 // Public
 
@@ -78,6 +82,7 @@ void VOX_Update(void)
 
 void Task_VoxUpdate(void)
 {
+#ifndef DISALLOW_TRANSMIT
 	if (gSettings.Vox && gPttLock == 0 && !gSaveMode && gScreenMode == SCREEN_MAIN && VOX_Timer == 0) {
 		if (SCHEDULER_CheckTask(TASK_VOX)
 #ifdef ENABLE_FM_RADIO
@@ -115,5 +120,9 @@ void Task_VoxUpdate(void)
 			}
 		}
 	}
+#else
+	SCHEDULER_ClearTask(TASK_VOX);
+	VOX_IsTransmitting = false;
+#endif
 }
 

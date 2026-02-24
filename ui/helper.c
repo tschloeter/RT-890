@@ -508,6 +508,7 @@ void UI_DrawCss(uint8_t CodeType, uint16_t Code, uint8_t Encrypt, bool bMute, ui
 
 void UI_DrawTxPower(bool bIsLow, uint8_t Vfo)
 {
+#ifndef DISALLOW_TRANSMIT
 	uint8_t Y = 43 - (Vfo * 41);
 
 	if (bIsLow) {
@@ -517,6 +518,7 @@ void UI_DrawTxPower(bool bIsLow, uint8_t Vfo)
 		gColorForeground = COLOR_GREEN;
 		UI_DrawSmallString(132, Y, "H", 1);
 	}
+#endif
 }
 
 void ConvertRssiToDbm(uint16_t Rssi) {
@@ -714,12 +716,18 @@ void UI_DrawDTMF(void)
 
 void UI_DrawFMFrequency(uint16_t Frequency)
 {
+
 	Int2Ascii(gSettings.FmFrequency, 4);
 	gShortString[4] = gShortString[3];
 	gShortString[3] = '.';
+#ifdef FM_RADIO_FULLSCREEN
 	gColorForeground = COLOR_BLUE;
 	UI_DrawString(84, 58, gShortString, 5);
 	UI_DrawString(124, 58, "M", 1);
+#else
+	gColorForeground = COLOR_FOREGROUND;
+	UI_DrawSmallString(14, 86, gShortString, 5);
+#endif
 }
 
 #ifdef ENABLE_FM_RADIO
@@ -914,13 +922,18 @@ void UI_DrawDecimal(const char *pInput)
 	char String[5];
 	uint8_t i;
 
-	gColorForeground = COLOR_BLUE;
 	for (i = 0; i < 4; i++) {
 		String[i] = (pInput[i] == 10) ? '-' : ('0' + pInput[i]);
 	}
 	String[4] = String[3];
 	String[3] = '.';
+#ifdef FM_RADIO_FULLSCREEN
+	gColorForeground = COLOR_BLUE;
 	UI_DrawString(84, 58, String, 5);
+#else
+	gColorForeground = COLOR_FOREGROUND;
+	UI_DrawSmallString(14, 86, String, 5);
+#endif
 }
 
 void UI_DrawMenuPosition(const char *pString)

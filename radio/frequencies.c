@@ -58,31 +58,31 @@ void FREQUENCY_SelectBand(uint32_t Frequency)
 	uint8_t Band;
 	uint8_t Level;
 
-	if (Frequency >= 13600000  && Frequency <= 17400000) {
+	if (Frequency >= BAND_136MHz_START  && Frequency <= BAND_136MHz_END) {
 		Band = BAND_136MHz;
 		Level = (Frequency - 13500000) / 500000;
 		gUseUhfFilter = false;
-	} else if (Frequency >= 40000000 && Frequency <= 48000000) {
+	} else if (Frequency >= BAND_400MHz_START && Frequency <= BAND_400MHz_END) {
 		Band = BAND_400MHz;
 		Level = (Frequency - 40000000) / 500000;
 		gUseUhfFilter = true;
-	} else if (Frequency >= 6400000 && Frequency <= 13600000) {
+	} else if (Frequency >= BAND_64MHz_START && Frequency <= BAND_64MHz_END) {
 		Band = BAND_64MHz;
 		Level = (Frequency - 6000000) / 500000;
 		gUseUhfFilter = false;
-	} else if (Frequency >= 17400000 && Frequency <= 24000000) {
+	} else if (Frequency >= BAND_174MHz_START && Frequency <= BAND_174MHz_END) {
 		Band = BAND_174MHz;
 		Level = (Frequency - 17000000) / 500000;
 		gUseUhfFilter = false;
-	} else if (Frequency >= 24000000 && Frequency <= 32000000) {
+	} else if (Frequency >= BAND_240MHz_START && Frequency <= BAND_240MHz_END) {
 		Band = BAND_240MHz;
 		Level = (Frequency - 24000000) / 500000;
 		gUseUhfFilter = true;
-	} else if (Frequency >= 32000000 && Frequency <= 40000000) {
+	} else if (Frequency >= BAND_320MHz_START && Frequency <= BAND_320MHz_END) {
 		Band = BAND_320MHz;
 		Level = (Frequency - 32000000) / 500000;
 		gUseUhfFilter = true;
-	} else if (Frequency >= 48000000 && Frequency <= 56000000) {
+	} else if (Frequency >= BAND_480MHz_START && Frequency <= BAND_480MHz_END) {
 		Band = BAND_480MHz;
 		Level = (Frequency - 48000000) / 500000;
 		gUseUhfFilter = true;
@@ -92,7 +92,7 @@ void FREQUENCY_SelectBand(uint32_t Frequency)
 
 	if (Band != gCurrentFrequencyBand) {
 		gCurrentFrequencyBand = Band;
-		SFLASH_Read(&gFrequencyBandInfo, 0x3BF020 + (Band * sizeof(gFrequencyBandInfo)), sizeof(gFrequencyBandInfo));
+		SFLASH_Read(&gFrequencyBandInfo, BASE_ADDR_FREQUENCY_BAND_INFO + (Band * sizeof(gFrequencyBandInfo)), sizeof(gFrequencyBandInfo));
 	}
 	if (Level > 15) {
 		Level = 15;

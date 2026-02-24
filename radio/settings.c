@@ -38,14 +38,14 @@ gExtendedSettings_t gExtendedSettings;
 
 static void RestoreCalibration(void)
 {
-	SFLASH_Read(gFlashBuffer, 0x3C0000, 0x1000);
-	SFLASH_Update(gFlashBuffer, 0x3BF000, 0x1000);
+	SFLASH_Read(gFlashBuffer, BASE_ADDR_CALIBRATION_BACKUP, 0x1000);
+	SFLASH_Update(gFlashBuffer, BASE_ADDR_CALIBRATION_ACTIVE, 0x1000);
 }
 
 void SETTINGS_BackupCalibration(void)
 {
-	SFLASH_Read(gFlashBuffer, 0x3BF000, 0x1000);
-	SFLASH_Update(gFlashBuffer, 0x3C0000, 0x1000);
+	SFLASH_Read(gFlashBuffer, BASE_ADDR_CALIBRATION_ACTIVE, 0x1000);
+	SFLASH_Update(gFlashBuffer, BASE_ADDR_CALIBRATION_BACKUP, 0x1000);
 }
 
 void SETTINGS_LoadCalibration(void)
@@ -63,7 +63,7 @@ void SETTINGS_LoadCalibration(void)
 		}
 	}
 
-	SFLASH_Read(&gCalibration, 0x3BF000, 0x20);
+	SFLASH_Read(&gCalibration, BASE_ADDR_CALIBRATION_ACTIVE, 0x20);
 	if (gCalibration._0x00 != 0x9A) {
 		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_RED);
 		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_GREEN);
@@ -97,16 +97,16 @@ void SETTINGS_LoadCalibration(void)
 
 void SETTINGS_LoadSettings(void)
 {
-	SFLASH_Read(WelcomeString, 0x3C1000, sizeof(WelcomeString));
-	SFLASH_Read(gDeviceName, 0x3C1020, sizeof(gDeviceName));
-	SFLASH_Read(&gSettings, 0x3C1030, sizeof(gSettings));
-	SFLASH_Read(&gDTMF_Settings, 0x3C9D20, sizeof(gDTMF_Settings));
-	SFLASH_Read(&gDTMF_Contacts, 0x3C9D30, sizeof(gDTMF_Contacts));
-	SFLASH_Read(&gDTMF_Kill, 0x3C9E30, sizeof(gDTMF_Kill));
-	SFLASH_Read(&gDTMF_Stun, 0x3C9E40, sizeof(gDTMF_Stun));
-	SFLASH_Read(&gDTMF_Wake, 0x3C9E50, sizeof(gDTMF_Wake));
+	SFLASH_Read(WelcomeString, BASE_ADDR_WELCOME_STRING, sizeof(WelcomeString));
+	SFLASH_Read(gDeviceName, BASE_ADDR_DEVICE_NAME, sizeof(gDeviceName));
+	SFLASH_Read(&gSettings, BASE_ADDR_SETTINGS, sizeof(gSettings));
+	SFLASH_Read(&gDTMF_Settings, BASE_ADDR_DTMF_SETTINGS, sizeof(gDTMF_Settings));
+	SFLASH_Read(&gDTMF_Contacts, BASE_ADDR_DTMF_CONTACTS, sizeof(gDTMF_Contacts));
+	SFLASH_Read(&gDTMF_Kill, BASE_ADDR_DTMF_KILL, sizeof(gDTMF_Kill));
+	SFLASH_Read(&gDTMF_Stun, BASE_ADDR_DTMF_STUN, sizeof(gDTMF_Stun));
+	SFLASH_Read(&gDTMF_Wake, BASE_ADDR_DTMF_WAKE, sizeof(gDTMF_Wake));
 	// Extended Settings bits are all 1 at first read as the flash is full of 0xFF
-	SFLASH_Read(&gExtendedSettings, 0x3D5000, sizeof(gExtendedSettings));
+	SFLASH_Read(&gExtendedSettings, BASE_ADDR_EXTENDED_SETTINGS, sizeof(gExtendedSettings));
 
 	if (gExtendedSettings.KeyShortcut[0] == 0xFF) {
 		SetDefaultKeyShortcuts(false); //
@@ -143,12 +143,17 @@ void SETTINGS_LoadSettings(void)
 			KEY_KeyCounter = 0;
 		}
 	}
+
+#ifdef DISALLOW_TRANSMIT
+	gSettings.RepeaterMode = 0;
+	gSettings.Vox = 0;
+#endif
 }
 
 void SETTINGS_SaveGlobals(void)
 {
-	SFLASH_Update(&gSettings, 0x3C1030, sizeof(gSettings));
-	SFLASH_Update(&gExtendedSettings, 0x3D5000, sizeof(gExtendedSettings));
+	SFLASH_Update(&gSettings, BASE_ADDR_SETTINGS, sizeof(gSettings));
+	SFLASH_Update(&gExtendedSettings, BASE_ADDR_EXTENDED_SETTINGS, sizeof(gExtendedSettings));
 }
 
 void SETTINGS_SaveState(void)
@@ -166,36 +171,35 @@ void SETTINGS_SaveState(void)
 
 void SETTINGS_SaveDTMF(void)
 {
-	SFLASH_Update(&gDTMF_Settings, 0x3C9D20, sizeof(gDTMF_Settings));
+	SFLASH_Update(&gDTMF_Settings, BASE_ADDR_DTMF_SETTINGS, sizeof(gDTMF_Settings));
 }
 
 void SETTINGS_FactoryReset(void)
 {
 	uint8_t Lock;
-	uint8_t i;
+	uint8_t page;
 
 	Lock = gSettings.bFLock;
-	for (i = 0; i < 10; i++) {
-		SFLASH_Read(gFlashBuffer, 0x3CB000 + (i * 0x1000), 0x1000);
-		SFLASH_Update(gFlashBuffer, 0x3C1000 + (i * 0x1000), 0x1000);
+	for (page = 0; page < 10; page++) {
+		SFLASH_Read(gFlashBuffer, BASE_ADDR_SETTINGS_FACTORY + (page * SFLASH_PAGE_SIZE), SFLASH_PAGE_SIZE);
+		SFLASH_Update(gFlashBuffer, BASE_ADDR_SETTINGS_ACTIVE + (page * SFLASH_PAGE_SIZE), SFLASH_PAGE_SIZE);
 	}
-	SFLASH_Read(&gSettings, 0x3C1030, sizeof(gSettings));
+	SFLASH_Read(&gSettings, BASE_ADDR_SETTINGS, sizeof(gSettings));
 	gSettings.bFLock = Lock;
 	SETTINGS_SaveGlobals();
 }
 
 void SETTINGS_SaveDeviceName(void)
 {
-	SFLASH_Update(gDeviceName, 0x3C1020, sizeof(gDeviceName));
+	SFLASH_Update(gDeviceName, BASE_ADDR_DEVICE_NAME, sizeof(gDeviceName));
 }
 
 void SETTINGS_BackupSettings(void)
 {
-	uint8_t i;
-
-	for (i = 0; i < 10; i++) {
-		SFLASH_Read(gFlashBuffer, 0x3C1000 + (i * 0x1000), 0x1000);
-		SFLASH_Update(gFlashBuffer, 0x3CB000 + (i * 0x1000), 0x1000);
+	uint8_t page;
+	for (page = 0; page < 10; page++) {
+		SFLASH_Read(gFlashBuffer, BASE_ADDR_SETTINGS_ACTIVE + (page * SFLASH_PAGE_SIZE), SFLASH_PAGE_SIZE);
+		SFLASH_Update(gFlashBuffer, BASE_ADDR_SETTINGS_FACTORY + (page * SFLASH_PAGE_SIZE), SFLASH_PAGE_SIZE);
 	}
 }
 
