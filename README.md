@@ -1,3 +1,102 @@
+# Radtel RT-890 Enhancements to RT-890 Firmware
+
+This repository contains additional modifications and feature enhancements built on top of the OEFW community firmware for the Radtel RT-890.
+
+It is intended to support a slightly different use-case focus (radio scanning and RX-centric operation) while remaining fully compatible with the upstream firmware and its licensing model.
+
+---
+
+## Upstream Project
+
+This repository is based on the work of the OEFW community and ultimately on DualTachyon’s open firmware reimplementation.
+
+All credit for the original reverse engineering, firmware architecture, and the vast majority of functionality belongs to the upstream authors.
+
+This repository **does not replace upstream** — it extends it.
+
+If any of the changes here are useful for the broader community, contributions or merges back upstream are highly encouraged.
+
+---
+
+## Disclaimer / License
+
+This repository is provided as an enhancement layer on top of the upstream OEFW firmware.
+
+All original licensing terms are preserved and respected.
+
+This firmware is still work in progress and may be unstable.  
+Use entirely at your own risk.
+
+Always back up your SPI memory before flashing any custom firmware.
+
+---
+
+## Changes Compared to Upstream (OEFWCOM main)
+
+### Functional additions
+- **FM Radio UI mode**
+  - Fullscreen or Status Bar mode selectable at compile time  
+  - `FM_RADIO_FULLSCREEN=0|1`  
+  - Originally introduced in M70CM’s work
+
+- **Radio Scanner Mode (RX-only firmware build)**
+  - Compile-time option to completely disable transmission code  
+  - `DISALLOW_TRANSMIT=1`
+
+### Menu improvements
+- Improved readability
+- More logical entry order
+- Menu entries conditionally compiled based on enabled features
+
+### Code quality improvements (no functional change)
+- Indentation cleanup
+- Fixed incorrect comparison of `gSettings.BandInfo[]` against `BAND` enum in `radio.c:TuneTX()`
+- Replaced magic numbers for side key indices with macros
+- Replaced raw SPI flash base addresses with descriptive macros
+- Replaced inline band frequency limits with symbolic macros
+
+### Fixes
+- Implemented previously unhandled `gVfoState[gSettings.CurrentVfo].bIs24Bit` logic in `menu.c`
+
+---
+
+## Repository Purpose
+
+This fork exists because the modifications here target a slightly different operational profile (scanner-focused / TX-restricted builds) and therefore may evolve at a different pace than upstream.
+
+Where possible, compatibility with upstream is maintained to simplify rebasing and merging.
+
+---
+
+## Keeping This Fork Updated
+
+To sync with upstream development:
+
+```
+git fetch upstream
+git rebase upstream/main
+```
+
+Resolve conflicts if necessary, then push updates.
+
+---
+
+## Attribution
+
+This project builds upon:
+
+- DualTachyon’s reverse engineering and firmware reimplementation
+- The OEFW community firmware development
+- Contributions from various community forks and experiments
+
+Their work made this project possible.
+
+---
+
+# Upstream README (Unmodified)
+
+The following documentation is preserved from the upstream project for completeness and reference.
+
 # Radtel RT-890 Custom Firmware
 
 This project is an effort to improve the firmware of the Radtel RT-890 in terms of features and radio performance.
