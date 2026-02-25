@@ -66,6 +66,12 @@ static void FlashCmd(uint8_t Command, uint8_t Hi, uint8_t Lo)
 	USART2->ctrl1_bit.uen = FALSE;
 
 	switch (Command) {
+#ifdef SFLASH_FULL_WRITE_CMD
+	case 0xAC:
+		Page = 0x0000;
+		Count = 0x1000;
+		break;
+#endif
 	case 0x40:
 		Page = 0x000;
 		Count = 0x2D0;
@@ -133,7 +139,11 @@ void HandlerUSART1(void)
 			UART_SendByte(0xFF);
 			BufferLength = 0;
 		} else {
-			if ((Cmd == 0x35 && BufferLength == 5) || (Cmd == 0x52 && BufferLength == 4) || (Cmd >= 0x40 && Cmd <= 0x4C && BufferLength == 132)) {
+			if ((Cmd == 0x35 && BufferLength == 5) || (Cmd == 0x52 && BufferLength == 4)
+#ifdef SFLASH_FULL_WRITE_CMD
+				|| (Cmd == 0xAC && BufferLength == 132)
+#endif
+				 || (Cmd >= 0x40 && Cmd <= 0x4C && BufferLength == 132)) {
 				if (CalcSum(Buffer, BufferLength - 1) == Buffer[BufferLength - 1]) {
 					gpio_bits_flip(GPIOA, BOARD_GPIOA_LED_RED);
 					UART_IsRunning = true;
@@ -170,7 +180,7 @@ void HandlerUSART1(void)
 					UART_IsRunning = true;
 					UART_Timer = 1000;
 					if (Buffer[3] != 0x16 && Buffer[3] == 0x10) {
-						UART_SendByte(6);
+						UART_SendByte(0x06);
 					}
 				} else {
 					gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
