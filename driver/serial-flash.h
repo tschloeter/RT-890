@@ -20,6 +20,8 @@
 #include <stdint.h>
 
 #define SFLASH_PAGE_SIZE                    (0x1000)
+#define SFLASH_SIZE                         (0x400000)
+#define SFLASH_BLOCK_SIZE                   (0x80)
 #define BASE_ADDR_AUDIO_MENU				(0x000000)
 #define BASE_ADDR_AUDIO_DIGITS_SHORT        (0x118000)
 #define BASE_ADDR_AUDIO_DIGITS_LONG         (0x188000)
