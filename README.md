@@ -34,14 +34,20 @@ Always back up your SPI memory before flashing any custom firmware.
 ## Changes Compared to Upstream (OEFWCOM main)
 
 ### Functional additions
+- **Radio Scanner Mode (RX-only firmware build)**
+  - Compile-time option to completely disable transmission code  
+  - `DISALLOW_TRANSMIT=1`
+
 - **FM Radio UI mode**
   - Fullscreen or Status Bar mode selectable at compile time  
   - `FM_RADIO_FULLSCREEN=0|1`  
   - Originally introduced in M70CM’s work
 
-- **Radio Scanner Mode (RX-only firmware build)**
-  - Compile-time option to completely disable transmission code  
-  - `DISALLOW_TRANSMIT=1`
+- **Refactoring of UART and SPI Flash logic**
+  - Replacement of large if-constructs through switch / case
+  - Introduced selective erasing of arbitrary flash pages on first demand
+    - Safely discard requests to double-write the same data block
+  - Introduction of global SPI flash write command 0x57
 
 ### Menu improvements
 - Improved readability
