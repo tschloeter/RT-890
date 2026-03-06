@@ -20,6 +20,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define RESPONSE_OK		(0x06)
+#define RESPONSE_NOK	(0xFF)
+
 extern uint16_t UART_Timer;
 extern bool UART_IsRunning;
 

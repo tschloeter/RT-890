@@ -22,175 +22,221 @@
 #include "radio/hardware.h"
 #include "radio/settings.h"
 
-static uint8_t Buffer[256];
-static uint8_t BufferLength;
-static uint8_t Region;
-static bool bFlashing;
-static uint8_t g_Unused;
+static uint8_t region = 0;
+static bool bFlashing = false;
+uint16_t UART_Timer = 0;
+bool UART_IsRunning = false;
 
-uint16_t UART_Timer;
-bool UART_IsRunning;
-
-static uint8_t CalcSum(const uint8_t *pBytes, uint8_t Size)
+static uint8_t checksum(uint8_t const *data, uint8_t size)
 {
-	uint8_t Sum = 0;
-	uint8_t i;
+	uint8_t sum = 0;
 
-	for (i = 0; i < Size; i++) {
-		Sum += *pBytes++;
+	while (size--) {
+		sum += *data++;
 	}
 
-	return Sum;
+	return sum;
 }
 
-static void FlashCmd(uint8_t Command, uint8_t Hi, uint8_t Lo)
+static uint8_t execute_flash_command(uint8_t cmd, uint16_t block, uint8_t *data)
 {
-	uint16_t Count = 0;
-	uint16_t Page = 0;
-	uint16_t Block;
-	uint16_t i;
-
-	Block = (Hi << 8) | Lo;
-	if (Command == 0x52) {
-		Buffer[0] = 0x52;
-		Buffer[1] = Hi;
-		Buffer[2] = Lo;
-		SFLASH_Read(Buffer + 3, Block * 128, 128);
-		Buffer[131] = CalcSum(Buffer, 0x83);
-		UART_Send(Buffer, 132);
-		return;
+	static uint16_t page_erased = 0xFFFFu;
+	static uint32_t blocks_written = 0;
+	uint16_t page = 0;
+	
+	if (cmd == 0x52) {
+		SFLASH_Read(data, block * SFLASH_BLOCK_SIZE, SFLASH_BLOCK_SIZE);
+		return RESPONSE_OK;
 	}
-
+	
 	TMR1->ctrl1_bit.tmren = FALSE;
-	// Why? Is this some left over from another radio?
-	USART2->ctrl1_bit.uen = FALSE;
-
-	switch (Command) {
-#ifdef SFLASH_FULL_WRITE_CMD
-	case 0xAC:
-		Page = 0x0000;
-		Count = 0x1000;
-		break;
-#endif
-	case 0x40:
-		Page = 0x000;
-		Count = 0x2D0;
-		break;
-	case 0x41:
-		Page = 0x2D0;
-		Count = 0x028;
-		break;
-	case 0x42:
-		Page = 0x2F8;
-		Count = 0x022;
-		break;
-	case 0x43:
-		Page = 0x31A;
-		Count = 0x002;
-		break;
-	case 0x47:
-		Page = 0x3B5;
-		Count = 0x00A;
-		break;
-	case 0x48:
-		Page = 0x3BF;
-		Count = 0x001;
-		Region = 1;
-		break;
-	case 0x49:
-		Page = 0x3C1;
-		Count = 0x00A;
-		Region = 2;
-		break;
-	case 0x4B:
-		Page = 0x3D8;
-		Count = 0x00A;
-		break;
-	case 0x4C:
-		Page = 0x31C;
-		Count = 0x99;
-		break;
-	}
-
 	bFlashing = true;
 
-	if (Block == 0) {
-		for (i = 0; i < Count; i++) {
-			SFLASH_Erase(Page + i);
-		}
+	// Flash region write commands, parameters are block number (128 bytes per block)
+	uint16_t page_offset = block / (SFLASH_PAGE_SIZE / SFLASH_BLOCK_SIZE);
+	block %= (SFLASH_PAGE_SIZE / SFLASH_BLOCK_SIZE);
+	uint16_t pages_in_region = 0;
+	switch (cmd) {
+	case 0x40: page = 0x000u + page_offset; region = 0; pages_in_region = 0x02D0u; break;
+	case 0x41: page = 0x2D0u + page_offset; region = 0; pages_in_region = 0x0028u; break;
+	case 0x42: page = 0x2F8u + page_offset; region = 0; pages_in_region = 0x0022u; break;
+	case 0x43: page = 0x31Au + page_offset; region = 0; pages_in_region = 0x0002u; break;
+	case 0x47: page = 0x3B5u + page_offset; region = 0; pages_in_region = 0x000Au; break;
+	case 0x48: page = 0x3BFu + page_offset; region = 1; pages_in_region = 0x0001u; break;
+	case 0x49: page = 0x3C1u + page_offset; region = 2; pages_in_region = 0x000Au; break;
+	case 0x4B: page = 0x3D8u + page_offset; region = 0; pages_in_region = 0x000Au; break;
+	case 0x4C: page = 0x31Cu + page_offset; region = 0; pages_in_region = 0x0099u; break;
+	case 0x57: page = 0x000u + page_offset; region = 0; pages_in_region = 0x0400u; break;
+	default:
+		return RESPONSE_NOK;
 	}
 
-	SFLASH_Write(Buffer + 3, (Page * 4096U) + (Block * 128U), 128U);
-	UART_SendByte(0x06);
+	if (page_offset > pages_in_region - 1) {
+		return RESPONSE_NOK;
+	}
+	
+	if (page >= SFLASH_SIZE / SFLASH_PAGE_SIZE) {
+		return RESPONSE_NOK;
+	}
+
+	if (page != page_erased) {
+		SFLASH_Erase(page);
+		page_erased = page;
+		blocks_written = 0;
+	}
+	else if (blocks_written & (1 << block)) {
+		return RESPONSE_NOK;
+	}
+	SFLASH_Write(data, (page * SFLASH_PAGE_SIZE) + (block * SFLASH_BLOCK_SIZE), SFLASH_BLOCK_SIZE);
+	blocks_written |= (1 << block);
+	return RESPONSE_OK;
 }
 
 void HandlerUSART1(void)
 {
-	if (USART1->ctrl1_bit.rdbfien && USART1->sts & USART_RDBF_FLAG) {
-		uint8_t Cmd;
+	static uint8_t Buffer[256] = { 0 };
+	static uint8_t BufferLength = 0;
+
+	if (USART1->ctrl1_bit.rdbfien && (USART1->sts & USART_RDBF_FLAG)) {
+		uint8_t cmd;
+
+		gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_GREEN);
+		gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
 
 		Buffer[BufferLength++] = USART1->dt;
-
 		BufferLength %= 256;
-		Cmd = Buffer[0];
-		if (BufferLength == 1 && Cmd != 0x35 && !(Cmd >= 0x40 && Cmd <= 0x4C) && Cmd != 0x52) {
-			UART_IsRunning = false;
-			UART_Timer = 0;
-			UART_SendByte(0xFF);
-			BufferLength = 0;
-		} else {
-			if ((Cmd == 0x35 && BufferLength == 5) || (Cmd == 0x52 && BufferLength == 4)
-#ifdef SFLASH_FULL_WRITE_CMD
-				|| (Cmd == 0xAC && BufferLength == 132)
-#endif
-				 || (Cmd >= 0x40 && Cmd <= 0x4C && BufferLength == 132)) {
-				if (CalcSum(Buffer, BufferLength - 1) == Buffer[BufferLength - 1]) {
-					gpio_bits_flip(GPIOA, BOARD_GPIOA_LED_RED);
-					UART_IsRunning = true;
-					UART_Timer = 1000;
-					if (Cmd == 0x35) {
-						if (Buffer[3] == 16) {
-							g_Unused = 0;
-							UART_SendByte(0x06);
-						} else if (Buffer[3] == 0xEE) {
-							gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
-							if (bFlashing) {
-								if (Region == 1) {
-									SETTINGS_BackupCalibration();
-								} else if (Region == 2) {
-									SETTINGS_BackupSettings();
-								}
-								gpio_bits_set(GPIOA, BOARD_GPIOA_LED_GREEN);
-								Region = 0;
-								HARDWARE_Reboot();
+
+		UART_IsRunning = true;
+		UART_Timer = 1000;
+		
+		// Command started, check if it's valid
+		cmd = Buffer[0];
+		if (1 == BufferLength) {
+			switch (cmd) {
+				case 0x35: // Backup/Restore
+				case 0x32: // NOP
+				case 0x40:
+				case 0x41:
+				case 0x42:
+				case 0x43:
+				case 0x47:
+				case 0x48:
+				case 0x49:
+				case 0x4B:
+				case 0x4C:
+				case 0x52: // Read Flash
+				case 0x57: // Write Flash
+					break;
+
+				default:
+					UART_SendByte(RESPONSE_NOK);
+					BufferLength = 0;
+			}	
+		} else { // cmd accumulating in buffer, check if we have a complete command
+		
+			switch(cmd) {
+				case 0x32:
+					if (5 == BufferLength) {
+						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
+							UART_SendByte(RESPONSE_NOK);
+						} else {
+							if (Buffer[3] == 0x16 || Buffer[3] == 0x10) {
+								UART_SendByte(RESPONSE_OK);
 							}
-							UART_IsRunning = false;
-							UART_Timer = 0;
 						}
-					} else {
-						FlashCmd(Cmd, Buffer[1], Buffer[2]);
+						BufferLength = 0;
 					}
-				} else {
-					gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
-					UART_SendByte(0xFF);
-				}
-				BufferLength = 0;
-			} else if (Cmd == 0x32 && BufferLength == 5) {
-				if (CalcSum(Buffer, 4) + 1 == Buffer[4]) {
-					UART_IsRunning = true;
-					UART_Timer = 1000;
-					if (Buffer[3] != 0x16 && Buffer[3] == 0x10) {
-						UART_SendByte(0x06);
+					break;
+
+				case 0x35:
+					if (5 == BufferLength) {
+						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
+							UART_SendByte(RESPONSE_NOK);
+						} else {
+							switch (Buffer[3]) {
+							case 0x16:
+								UART_SendByte(RESPONSE_OK);
+								break;
+
+							case 0xEE:
+								if (bFlashing) {
+									if (region == 1) {
+										SETTINGS_BackupCalibration();
+										UART_SendByte(RESPONSE_OK);
+									} else if (region == 2) {
+										SETTINGS_BackupSettings();
+										UART_SendByte(RESPONSE_OK);
+									}
+									else {
+										UART_SendByte(RESPONSE_NOK);
+									}
+									HARDWARE_Reboot();
+									for(;;);
+								}
+								break;
+
+							default:
+								UART_SendByte(RESPONSE_NOK);
+							}
+						}
+						BufferLength = 0;
 					}
-				} else {
-					gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
-					UART_SendByte(0xFF);
-					UART_IsRunning = false;
-					UART_Timer = 0;
-				}
-				BufferLength = 0;
-			}
+					break;
+
+				case 0x40:
+				case 0x41:
+				case 0x42:
+				case 0x43:
+				case 0x47:
+				case 0x48:
+				case 0x49:
+				case 0x4B:
+				case 0x4C:
+				case 0x57:
+					if (132 == BufferLength) {
+						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
+							UART_SendByte(RESPONSE_NOK);
+						} else {
+							UART_SendByte(execute_flash_command(cmd, Buffer[1] << 8 | Buffer[2], Buffer + 3));
+						}
+						BufferLength = 0;
+					}
+					break;
+
+				case 0x52:
+					if (4 == BufferLength) {
+						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
+							UART_SendByte(RESPONSE_NOK);
+						} else {
+							if (RESPONSE_OK == execute_flash_command(cmd, Buffer[1] << 8 | Buffer[2], Buffer + 3)) {
+								Buffer[131] = checksum(Buffer, 131);
+								UART_Send(Buffer, 132);
+							} else {
+								UART_SendByte(RESPONSE_NOK);
+							}
+						}
+						BufferLength = 0;
+					}
+					break;
+
+				default:
+					UART_SendByte(RESPONSE_NOK);
+					BufferLength = 0;
+			}				
 		}
+	}
+
+	if (bFlashing) {
+		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_RED);
+		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_GREEN);
+	}
+	else if (UART_IsRunning) {
+		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_RED);
+		gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_GREEN);
+	}
+	else {
+		gpio_bits_reset(GPIOA, BOARD_GPIOA_LED_RED);
+		gpio_bits_set(GPIOA, BOARD_GPIOA_LED_GREEN);
 	}
 }
 
