@@ -57,15 +57,15 @@ static uint8_t execute_flash_command(uint8_t cmd, uint16_t block, uint8_t *data)
 	block %= (SFLASH_PAGE_SIZE / SFLASH_BLOCK_SIZE);
 	uint16_t pages_in_region = 0;
 	switch (cmd) {
-	case 0x40: page = 0x000u + page_offset; region = 0; pages_in_region = 0x02D0u; break;
-	case 0x41: page = 0x2D0u + page_offset; region = 0; pages_in_region = 0x0028u; break;
-	case 0x42: page = 0x2F8u + page_offset; region = 0; pages_in_region = 0x0022u; break;
-	case 0x43: page = 0x31Au + page_offset; region = 0; pages_in_region = 0x0002u; break;
-	case 0x47: page = 0x3B5u + page_offset; region = 0; pages_in_region = 0x000Au; break;
-	case 0x48: page = 0x3BFu + page_offset; region = 1; pages_in_region = 0x0001u; break;
-	case 0x49: page = 0x3C1u + page_offset; region = 2; pages_in_region = 0x000Au; break;
-	case 0x4B: page = 0x3D8u + page_offset; region = 0; pages_in_region = 0x000Au; break;
-	case 0x4C: page = 0x31Cu + page_offset; region = 0; pages_in_region = 0x0099u; break;
+	case 0x40: page = 0x000u + page_offset; region |= 0; pages_in_region = 0x02D0u; break;
+	case 0x41: page = 0x2D0u + page_offset; region |= 0; pages_in_region = 0x0028u; break;
+	case 0x42: page = 0x2F8u + page_offset; region |= 0; pages_in_region = 0x0022u; break;
+	case 0x43: page = 0x31Au + page_offset; region |= 0; pages_in_region = 0x0002u; break;
+	case 0x47: page = 0x3B5u + page_offset; region |= 0; pages_in_region = 0x000Au; break;
+	case 0x48: page = 0x3BFu + page_offset; region |= 1; pages_in_region = 0x0001u; break;
+	case 0x49: page = 0x3C1u + page_offset; region |= 2; pages_in_region = 0x000Au; break;
+	case 0x4B: page = 0x3D8u + page_offset; region |= 0; pages_in_region = 0x000Au; break;
+	case 0x4C: page = 0x31Cu + page_offset; region |= 0; pages_in_region = 0x0099u; break;
 	case 0x57: page = 0x000u + page_offset; region = 0; pages_in_region = 0x0400u; break;
 	default:
 		return RESPONSE_NOK;
@@ -154,24 +154,25 @@ void HandlerUSART1(void)
 							UART_SendByte(RESPONSE_NOK);
 						} else {
 							switch (Buffer[3]) {
+							case 0x10:
 							case 0x16:
 								UART_SendByte(RESPONSE_OK);
 								break;
 
 							case 0xEE:
 								if (bFlashing) {
-									if (region == 1) {
+									if (0 != (region & 1)) {
 										SETTINGS_BackupCalibration();
-										UART_SendByte(RESPONSE_OK);
-									} else if (region == 2) {
+									}
+									if (0 != (region & 2)) {
 										SETTINGS_BackupSettings();
-										UART_SendByte(RESPONSE_OK);
 									}
-									else {
-										UART_SendByte(RESPONSE_NOK);
-									}
+									UART_SendByte(RESPONSE_OK);
 									HARDWARE_Reboot();
 									for(;;);
+								}
+								else {
+									UART_SendByte(RESPONSE_OK);
 								}
 								break;
 
