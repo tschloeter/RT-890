@@ -22,10 +22,10 @@
 #include "radio/hardware.h"
 #include "radio/settings.h"
 
-static uint8_t volatile region = 0;
-static bool volatile bFlashing = false;
-uint16_t volatile UART_Timer = 0;
-bool volatile UART_IsRunning = false;
+static uint8_t region = 0;
+static bool bFlashing = false;
+uint16_t UART_Timer = 0;
+bool UART_IsRunning = false;
 
 static uint8_t checksum(uint8_t const *data, uint8_t size)
 {
@@ -105,6 +105,7 @@ void HandlerUSART1(void)
 
 		Buffer[BufferLength++] = USART1->dt;
 		BufferLength %= 256;
+
 		UART_IsRunning = true;
 		UART_Timer = 1000;
 		
@@ -129,8 +130,6 @@ void HandlerUSART1(void)
 
 				default:
 					UART_SendByte(RESPONSE_NOK);
-					UART_IsRunning = false;
-					UART_Timer = 0;
 					BufferLength = 0;
 			}	
 		} else { // cmd accumulating in buffer, check if we have a complete command
@@ -145,8 +144,6 @@ void HandlerUSART1(void)
 								UART_SendByte(RESPONSE_OK);
 							}
 						}
-						UART_IsRunning = false;
-						UART_Timer = 0;
 						BufferLength = 0;
 					}
 					break;
@@ -182,8 +179,6 @@ void HandlerUSART1(void)
 								UART_SendByte(RESPONSE_NOK);
 							}
 						}
-						UART_IsRunning = false;
-						UART_Timer = 0;
 						BufferLength = 0;
 					}
 					break;
@@ -202,7 +197,7 @@ void HandlerUSART1(void)
 						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
 							UART_SendByte(RESPONSE_NOK);
 						} else {
-							UART_SendByte(execute_flash_command(cmd, (((uint16_t) Buffer[1] << 8) | ((uint16_t) Buffer[2])), Buffer + 3));
+							UART_SendByte(execute_flash_command(cmd, Buffer[1] << 8 | Buffer[2], Buffer + 3));
 						}
 						BufferLength = 0;
 					}
@@ -213,23 +208,19 @@ void HandlerUSART1(void)
 						if (checksum(Buffer, BufferLength - 1) != Buffer[BufferLength - 1]) {
 							UART_SendByte(RESPONSE_NOK);
 						} else {
-							if (RESPONSE_OK == execute_flash_command(cmd, (((uint16_t) Buffer[1] << 8) | ((uint16_t) Buffer[2])), Buffer + 3)) {
+							if (RESPONSE_OK == execute_flash_command(cmd, Buffer[1] << 8 | Buffer[2], Buffer + 3)) {
 								Buffer[131] = checksum(Buffer, 131);
 								UART_Send(Buffer, 132);
 							} else {
 								UART_SendByte(RESPONSE_NOK);
 							}
 						}
-						UART_IsRunning = false;
-						UART_Timer = 0;
 						BufferLength = 0;
 					}
 					break;
 
 				default:
 					UART_SendByte(RESPONSE_NOK);
-					UART_IsRunning = false;
-					UART_Timer = 0;
 					BufferLength = 0;
 			}				
 		}
