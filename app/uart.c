@@ -21,6 +21,7 @@
 #include "driver/uart.h"
 #include "radio/hardware.h"
 #include "radio/settings.h"
+#include "misc.h"
 
 static uint8_t region = 0;
 static bool bFlashing = false;
@@ -79,7 +80,15 @@ static uint8_t execute_flash_command(uint8_t cmd, uint16_t block, uint8_t *data)
 		return RESPONSE_NOK;
 	}
 
-	if (page != page_erased) {
+	if (page != page_erased) { // Enter into a new page
+		if ((0xFFFFu != page_erased) && (blocks_written != 0xFFFFFFFFu)) { // Not the first invocation and previous page not fully written
+			for (uint8_t count = 0; count < SFLASH_PAGE_SIZE / SFLASH_BLOCK_SIZE; count++) {
+				if (false == (blocks_written & (1 << count))) { // Find untouched blocks and write back from buffer
+					SFLASH_Update(gFlashBuffer + (count * SFLASH_BLOCK_SIZE), (page_erased * SFLASH_PAGE_SIZE) + count, SFLASH_BLOCK_SIZE);
+				}
+			}
+		}
+		SFLASH_Read(gFlashBuffer, page * SFLASH_PAGE_SIZE, SFLASH_PAGE_SIZE);
 		SFLASH_Erase(page);
 		page_erased = page;
 		blocks_written = 0;

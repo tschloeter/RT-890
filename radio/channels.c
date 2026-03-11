@@ -635,11 +635,11 @@ void CHANNELS_LoadVfoMode(void)
 	memcpy(&VfoState[0], &VfoTemplate, sizeof(VfoState));
 
 	while (CHANNELS_LoadChannel(999, 0)) {
-		SFLASH_Update(&VfoState[0], 0x3C9CE0, sizeof(VfoState[0]));
+		SFLASH_Update(&VfoState[0], BASE_ADDR_CHANNELS + 999 * sizeof(ChannelInfo_t), sizeof(VfoState[0]));
 	}
 
 	while (CHANNELS_LoadChannel(1000, 1)) {
-		SFLASH_Update(&VfoState[1], 0x3C9D00, sizeof(VfoState[1]));
+		SFLASH_Update(&VfoState[1], BASE_ADDR_CHANNELS + 1000 * sizeof(ChannelInfo_t), sizeof(VfoState[1]));
 	}
 
 	if (gSettings.CurrentVfo) {
